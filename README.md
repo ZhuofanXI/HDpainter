@@ -1,2 +1,2 @@
-# Xcell
-Xcell is a cross-platform generative latent diffusion model pre-trained on synthetic Xenium data to achieve zero-shot single-cell segmentation and expression denoising on Visium HD spatial transcriptomics.
+# HDpainter 
+HDpainter is a cross-platform latent generative diffusion model utilizing Visium HD data synthesized from Xenium. The model can directly take preprocessed Visium HD data as input to generate cell segmentation and spatial denoising.
