@@ -3,4 +3,27 @@ name = "hdpainter"
 version = "0.1.0"
 description = "Cross-platform latent diffusion model for joint cell segmentation and transcript denoising in Visium HD spatial transcriptomics"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    # PyTorch ecosystem (CUDA 12.4 build, compatible with CUDA 12.8)
+    "torch",
+    "torchvision",
+    # Scientific computing
+    "numpy",
+    "scipy",
+    # Spatial transcriptomics
+    "scanpy",
+    "anndata",
+    # Utilities
+    "tqdm",
+    # Jupyter
+    "ipykernel",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
