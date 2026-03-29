@@ -36,7 +36,7 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 echo "=========================================="
 
 # ── Training ──────────────────────────────────────────────────────────────────
-uv run python scripts/train_vae.py \
+uv run python -u scripts/train_vae.py \
     --data_dir    $DATA \
     --ckpt_dir    $CKPT \
     --epochs      100   \
