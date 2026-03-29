@@ -45,4 +45,7 @@ def build_dataloader(
         shuffle=shuffle,
         num_workers=num_workers,
         pin_memory=True,
+        # spawn avoids CUDA re-init errors when workers are created after
+        # the main process has already initialised a CUDA context
+        multiprocessing_context="spawn" if num_workers > 0 else None,
     )
