@@ -1,0 +1,6 @@
+[project]
+name = "hdpainter"
+version = "0.1.0"
+description = "Cross-platform latent diffusion model for joint cell segmentation and transcript denoising in Visium HD spatial transcriptomics"
+requires-python = ">=3.10"
+dependencies = []
