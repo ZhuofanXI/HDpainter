@@ -4,7 +4,7 @@
 #SBATCH --gpus=1
 #SBATCH --constraint=a100
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --output=logs/vae_%j.out
 #SBATCH --error=logs/vae_%j.err
 
@@ -40,11 +40,11 @@ uv run python scripts/train_vae.py \
     --data_dir    $DATA \
     --ckpt_dir    $CKPT \
     --epochs      100   \
-    --batch_size  4     \
+    --batch_size  2     \
     --lr          1e-4  \
     --latent_dim  50    \
     --kl_weight   1e-5  \
-    --num_workers 8     \
+    --num_workers 4     \
     --save_every  10
 
 echo "=========================================="

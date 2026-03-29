@@ -59,6 +59,7 @@ def main() -> None:
         num_workers=args.num_workers,
         pin_memory=(device.type == "cuda"),
         multiprocessing_context="spawn" if args.num_workers > 0 else None,
+        persistent_workers=args.num_workers > 0,
     )
 
     # --- Model ---
