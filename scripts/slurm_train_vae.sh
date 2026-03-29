@@ -14,7 +14,7 @@ set -e
 PROJ=/ibex/user/wuj0c/Projects/RNA/HDpainter
 CODE=$PROJ/code
 DATA=$PROJ/data/NSCLC
-CKPT=$PROJ/checkpoints/vae_nsclc
+CKPT=$PROJ/checkpoints/vae_nsclc_log1p
 
 mkdir -p $CODE/logs $CKPT
 
