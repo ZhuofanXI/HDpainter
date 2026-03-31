@@ -24,10 +24,8 @@ class SpatialTranscriptomicsDataset(Dataset):
         input_nuclei = tile["input_nuclei"].to_dense().permute(2, 0, 1).float()
         target_expr = tile["target_expr"].to_dense().permute(2, 0, 1)
         target_cell_id = tile["target_cell_id"].to_dense().permute(2, 0, 1).float()
-        # log1p-normalise expression counts to compress dynamic range and
-        # produce a more Gaussian-like distribution for the VAE
-        input_expr = torch.log1p(input_expr)
-        target_expr = torch.log1p(target_expr)
+        # SVD tiles are already StandardScaler-normalised (mean≈0, std≈0.6);
+        # no further transformation is applied here.
         return {
             "input_expr": input_expr,
             "input_nuclei": input_nuclei,
