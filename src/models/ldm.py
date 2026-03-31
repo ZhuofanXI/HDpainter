@@ -184,24 +184,25 @@ class ConditionalUNet(nn.Module):
         # Head 1: predict noise eps
         self.noise_head = nn.Conv2d(in_ch, latent_dim, 1)
 
-        # Head 2: predict cell boundary from estimated Z_0
+        # Head 2: predict inter-cell boundary directly from decoder features.
+        # Taking decoder features (not z0_hat) ensures boundary gradients flow
+        # through the full U-Net body and actually improve the encoder/decoder.
         self.boundary_head = nn.Sequential(
-            nn.Conv2d(latent_dim, 32, 3, padding=1),
+            nn.Conv2d(in_ch, 32, 3, padding=1),
             nn.SiLU(),
             nn.Conv2d(32, 1, 1),
         )
 
     def forward(
         self,
-        z_t: torch.Tensor,         # (B, latent_dim, H, W) noisy latent at step t
-        z_cond: torch.Tensor,       # (B, latent_dim, H, W) degraded condition
-        t: torch.Tensor,            # (B,) int timestep indices
-        alpha_bar_t: torch.Tensor,  # (B,) float ᾱ_t for Z_0 estimation
+        z_t: torch.Tensor,      # (B, latent_dim, H, W) noisy latent at step t
+        z_cond: torch.Tensor,   # (B, latent_dim, H, W) degraded condition
+        t: torch.Tensor,        # (B,) int timestep indices
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns:
-            eps_hat:  predicted noise,           (B, latent_dim, H, W)
-            boundary: cell boundary logits,      (B, 1, H, W)
+            eps_hat:  predicted noise,      (B, latent_dim, H, W)
+            boundary: boundary logits,      (B, 1, H, W)
         """
         t_emb = self.time_emb(t)  # (B, emb_dim)
 
@@ -238,15 +239,12 @@ class ConditionalUNet(nn.Module):
 
         x = F.silu(self.out_norm(x))
 
-        # Noise prediction
+        # Head 1: noise prediction
         eps_hat = self.noise_head(x)
 
-        # Estimate clean Z_0 from current prediction, then predict boundary
-        # Z_0_hat = (Z_t - sqrt(1 - ᾱ_t) * eps_hat) / sqrt(ᾱ_t)
-        sqrt_ab = alpha_bar_t.sqrt()[:, None, None, None]
-        sqrt_1ab = (1.0 - alpha_bar_t).sqrt()[:, None, None, None]
-        z0_hat = (z_t - sqrt_1ab * eps_hat.detach()) / sqrt_ab.clamp(min=1e-8)
-
-        boundary = self.boundary_head(z0_hat)
+        # Head 2: boundary prediction from decoder features
+        # Both heads share the U-Net body; gradients from both losses
+        # flow back through the encoder/decoder.
+        boundary = self.boundary_head(x)
 
         return eps_hat, boundary

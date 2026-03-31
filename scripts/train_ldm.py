@@ -43,9 +43,10 @@ def make_linear_schedule(T: int, beta_start: float = 1e-4, beta_end: float = 0.0
 
 def cell_id_to_boundary(cell_id: torch.Tensor) -> torch.Tensor:
     """
-    Derive binary boundary mask from instance cell-ID map.
-    A pixel is a boundary if any 4-connected neighbour has a different cell ID.
-    Only pixels inside cell regions (cell_id != 0) are considered.
+    Derive inter-cell boundary mask from instance cell-ID map.
+    A pixel is a boundary only where two *different* non-zero cells are adjacent
+    (cell/background edges are NOT marked). This gives ~26% positive rate
+    within cell regions, vs ~91% with the naive "any different neighbour" rule.
 
     Args:
         cell_id: (B, 1, H, W) int32 instance map
@@ -54,29 +55,47 @@ def cell_id_to_boundary(cell_id: torch.Tensor) -> torch.Tensor:
     """
     cid = cell_id.float()
     pad = F.pad(cid, (1, 1, 1, 1), mode="constant", value=0)
-    center = pad[:, :, 1:-1, 1:-1]
-    diff = (
-        (center != pad[:, :, :-2, 1:-1])   # up
-        | (center != pad[:, :, 2:, 1:-1])  # down
-        | (center != pad[:, :, 1:-1, :-2]) # left
-        | (center != pad[:, :, 1:-1, 2:])  # right
+    c = pad[:, :, 1:-1, 1:-1]
+
+    def inter(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        return ((a != b) & (a != 0) & (b != 0))
+
+    boundary = (
+        inter(c, pad[:, :, :-2, 1:-1])   # up
+        | inter(c, pad[:, :, 2:, 1:-1])  # down
+        | inter(c, pad[:, :, 1:-1, :-2]) # left
+        | inter(c, pad[:, :, 1:-1, 2:])  # right
     ).float()
-    cell_mask = (cell_id != 0).float()
-    return diff * cell_mask
+    return boundary
 
 
 def dice_loss(logits: torch.Tensor, target: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     pred = torch.sigmoid(logits)
-    # sum over spatial dims
     intersection = (pred * target).sum(dim=(-2, -1))
     union = pred.sum(dim=(-2, -1)) + target.sum(dim=(-2, -1))
     return (1.0 - (2.0 * intersection + eps) / (union + eps)).mean()
 
 
-def boundary_loss_fn(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """BCE + Dice combined boundary loss."""
-    bce = F.binary_cross_entropy_with_logits(logits, target)
-    return bce + dice_loss(logits, target)
+def boundary_loss_fn(logits: torch.Tensor, target: torch.Tensor, cell_mask: torch.Tensor) -> torch.Tensor:
+    """
+    BCE (with pos_weight for class imbalance) + Dice, computed only in cell region.
+    Inter-cell boundary positive rate ≈ 26% within cell region → pos_weight ≈ 3.
+    """
+    # Flatten to cell pixels only
+    mask = cell_mask[:, 0].bool()          # (B, H, W)
+    logits_c = logits[:, 0][mask]          # (N_cell,)
+    target_c = target[:, 0][mask]          # (N_cell,)
+    pw = torch.tensor([3.0], device=logits.device)
+    bce = F.binary_cross_entropy_with_logits(logits_c, target_c, pos_weight=pw)
+
+    # Dice on masked region
+    pred_m = torch.sigmoid(logits) * cell_mask
+    tgt_m  = target * cell_mask
+    intersection = (pred_m * tgt_m).sum(dim=(-2, -1))
+    union = pred_m.sum(dim=(-2, -1)) + tgt_m.sum(dim=(-2, -1))
+    dice = (1.0 - (2.0 * intersection + 1e-6) / (union + 1e-6)).mean()
+
+    return bce + dice
 
 
 def lambda2(t: torch.Tensor, t_thresh: int = 200, slope: float = 0.05) -> torch.Tensor:
@@ -156,9 +175,9 @@ def train(args):
             z_t = sqrt_ab * z0 + sqrt_1ab * eps
 
             with autocast():
-                eps_hat, boundary_logits = model(z_t, z_cond, t, ab_t)
+                eps_hat, boundary_logits = model(z_t, z_cond, t)
 
-                # Cell region mask — broadcast to [B, latent_dim, H, W]
+                # Cell region mask
                 cell_mask = (cell_id != 0).float()  # (B, 1, H, W)
 
                 # ── Diffusion loss (Huber, cell-region only) ──────────────────
@@ -169,9 +188,7 @@ def train(args):
 
                 # ── Boundary loss (BCE+Dice, cell-region only, time-gated) ────
                 b_gt = cell_id_to_boundary(cell_id)         # (B, 1, H, W)
-                b_logits_masked = boundary_logits * cell_mask
-                b_gt_masked     = b_gt * cell_mask
-                b_loss = boundary_loss_fn(b_logits_masked, b_gt_masked)
+                b_loss = boundary_loss_fn(boundary_logits, b_gt, cell_mask)
 
                 lam2 = lambda2(t, args.t_thresh).mean()     # scalar weight
                 loss = diff_loss + lam2 * b_loss

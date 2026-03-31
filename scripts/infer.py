@@ -73,7 +73,7 @@ def ddim_sample(model, z_cond, alpha_bars, device, ddim_steps=50, t_start=500):
         ab_t = alpha_bars[t_idx].to(device)
         t_tensor = torch.tensor([t_idx + 1], device=device, dtype=torch.long)
 
-        eps_hat, _ = model(z_t, z_cond, t_tensor, ab_t.expand(1))
+        eps_hat, _ = model(z_t, z_cond, t_tensor)
 
         # Estimate clean z0
         x0_hat = (z_t - (1 - ab_t).sqrt() * eps_hat) / ab_t.sqrt().clamp(min=1e-8)
