@@ -35,17 +35,11 @@ echo "Started : $(date)"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 echo "=========================================="
 
-# ── Training ──────────────────────────────────────────────────────────────────
-uv run python -u scripts/train_vae.py \
+# ── Example ──────────────────────────────────────────────────────────────────
+uv run python -u scripts/xxx.py \
     --data_dir    $DATA \
     --ckpt_dir    $CKPT \
-    --epochs      100   \
-    --batch_size  2     \
-    --lr          1e-4  \
-    --latent_dim  50    \
-    --kl_weight   1e-5  \
-    --num_workers 4     \
-    --save_every  10
+    # other parameters
 
 echo "=========================================="
 echo "Finished : $(date)"
