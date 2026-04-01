@@ -13,10 +13,12 @@ set -e
 # ── Paths ─────────────────────────────────────────────────────────────────────
 PROJ=/ibex/user/wuj0c/Projects/RNA/HDpainter
 CODE=$PROJ/code
-DATA=$PROJ/data/SVD_CESC
-CKPT=$PROJ/checkpoints/ldm_cesc
+DATA_CESC=$PROJ/data/SVD_CESC
+DATA_NSCLC=$PROJ/data/SVD_NSCLC
+DATA_PRAD=$PROJ/data/SVD_PRAD
+CKPT=$PROJ/checkpoints/ldm_all
 
-mkdir -p $CODE/logs $CKPT
+mkdir -p $CODE/logs $CKPT $CKPT
 
 # ── Environment check ─────────────────────────────────────────────────────────
 echo "验证 uv 环境..."
@@ -37,7 +39,7 @@ echo "=========================================="
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 uv run python -u scripts/train_ldm.py \
-    --data_dir      $DATA \
+    --data_dir      $DATA_CESC $DATA_NSCLC $DATA_PRAD \
     --ckpt_dir      $CKPT \
     --epochs        200   \
     --batch_size    2     \

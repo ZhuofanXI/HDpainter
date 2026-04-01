@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(uv run:*)",
-      "Bash(nvidia-smi:*)"
+      "Bash(nvidia-smi:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls -lh /ibex/user/wuj0c/Projects/RNA/HDpainter/data/*.zip)",
+      "Bash(unzip -l SVD_NSCLC.zip)",
+      "Bash(unzip -l SVD_PRAD.zip)",
+      "Bash(unzip -l SVD_CESC.zip)"
     ]
   }
 }
