@@ -10,6 +10,7 @@
 | ------------------------------- | -------------------------------------------------- |
 | [dataset.md](dataset.md)        | 数据集加载、DataLoader、tile 格式说明              |
 | [training.md](training.md)      | LDM 训练流程、超参数、噪声调度、SLURM 提交        |
+| [experiments.md](experiments.md)| 实验记录：训练结果、推断实验、Bug 修复、瓶颈分析  |
 | [zhuofan.md](zhuofan.md)        | 架构设计规范（SVD降维、U-Net、Decoder、Loss、评估）|
 
 ## 快速上手

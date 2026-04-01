@@ -49,7 +49,7 @@ $$z_t = \sqrt{\bar{\alpha}_t}\, z_0 + \sqrt{1 - \bar{\alpha}_t}\, \varepsilon, \
 | **瓶颈** | `ResBlock → SelfAttentionBlock（8头）→ ResBlock` |
 | **解码器** | 对称上采样，skip connection 拼接 |
 | **噪声头** | `1×1 Conv → 64 通道 ε̂`，用于 Huber diffusion loss |
-| **边界头** | 先由 ε̂ 估计 Z̃_0，再经 `3×3 Conv → SiLU → 1×1 Conv → 1 通道` 输出边界 logits |
+| **边界头** | 直接从解码器特征 x 预测，`3×3 Conv → SiLU → 1×1 Conv → 1 通道` 输出边界 logits（inter-cell boundary）|
 
 ### GroupNorm
 
@@ -75,7 +75,7 @@ $$\mathcal{L}_{\text{diff}} = \frac{\sum_{i \in \text{cell}} \text{Huber}(\hat{\
 
 $$\mathcal{L}_{\text{bound}} = \text{BCE}(\hat{B}, B_{\text{gt}}) + \text{Dice}(\hat{B}, B_{\text{gt}})$$
 
-边界真值 $B_{\text{gt}}$ 由 `cell_id_to_boundary()` 从实例掩码实时生成（4-连通邻域差异）。
+边界真值 $B_{\text{gt}}$ 由 `cell_id_to_boundary()` 从实例掩码实时生成，只标记**两个不同非零细胞相邻**的像素（inter-cell boundary，正样本率 ~26%）。BCE 使用 `pos_weight=3.0` 补偿类别不平衡。
 
 **时间门控权重**（`lambda2`）：
 
