@@ -42,9 +42,10 @@ class SpatialTranscriptomicsDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         tile = torch.load(self.file_paths[idx], weights_only=True)
         # sparse COO -> dense, then (H, W, C) -> (C, H, W)
-        input_expr    = tile["input_expr"].to_dense().permute(2, 0, 1) * self.scale
+        # Scale to std≈1, then clamp to remove SVD outlier artefacts (>10σ).
+        input_expr    = (tile["input_expr"].to_dense().permute(2, 0, 1) * self.scale).clamp(-10, 10)
         input_nuclei  = tile["input_nuclei"].to_dense().permute(2, 0, 1).float()
-        target_expr   = tile["target_expr"].to_dense().permute(2, 0, 1) * self.scale
+        target_expr   = (tile["target_expr"].to_dense().permute(2, 0, 1) * self.scale).clamp(-10, 10)
         target_cell_id = tile["target_cell_id"].to_dense().permute(2, 0, 1).float()
         return {
             "input_expr":    input_expr,

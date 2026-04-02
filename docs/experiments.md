@@ -1,7 +1,7 @@
 # LDM 训练与推断实验记录
 
-> 记录时间：2026-04-01  
-> 数据集：`SVD_CESC`（107 个 512×512 tile，64 维 SVD 投影后）  
+> 最近更新：2026-04-02  
+> 数据集：`SVD_CESC`（107 tile）+ `SVD_NSCLC`（小）+ `SVD_PRAD`（中），共 230 tile  
 > 硬件：IBEX A100 80GB
 
 ---
@@ -120,23 +120,91 @@ Epoch 0199 | diff=0.120  bound=1.265
 
 ---
 
-## 5. 当前瓶颈分析
+## 5. 多数据集训练实验（v3）
 
-### 主要瓶颈：训练数据不足
+### 5.1 背景
 
-模型有 **44.2M 参数**，但训练集只有 **107 个 tile**。模型可以学到局部去噪模式（RMSE 改善），但无法泛化出全局空间先验——Ground Truth 中清晰的大尺度组织结构（细胞密集区、环状形态）在预测中几乎无法恢复。
+为解决 v2 数据不足问题（107 tile），引入 NSCLC 和 PRAD 数据集，共 **230 tile**，对每个数据集分别计算 SVD 投影后的标准差并进行归一化：
 
-### 次要问题：boundary loss 权重调优
+| 数据集 | tile 数 | 有效 std | scale 因子 |
+|--------|---------|----------|-----------|
+| SVD_CESC | 107 | 1.03 | 0.97 |
+| SVD_NSCLC | ~60 | 0.42 | 2.38 |
+| SVD_PRAD | ~63 | 0.34 | 2.94 |
 
-修复后 boundary loss 确实在下降（1.64→1.27），但两任务（去噪 + 边界）竞争导致 diff loss 略微升高。后续可以调整 `t_thresh` 或 `λ₂` 权重进一步优化平衡。
+Scale 因子在 `src/dataset.py` 的 `_DATASET_SCALE` 字典中硬编码，由 `_infer_scale()` 根据目录名自动读取。
+
+### 5.2 NaN 崩溃（epoch 284）
+
+训练到 epoch 284 时梯度爆炸，loss 变为 NaN。
+
+**根本原因**：PRAD 数据在 ×2.94 缩放后存在极端离群值（`max_abs ≈ 186`，对比 CESC p999=11.8）。这些离群值导致 AMP 溢出，进而梯度爆炸。
+
+**修复**：在 `src/dataset.py` 加入 `.clamp(-10, 10)`（缩放后），裁去 10σ 以外的 SVD 异常值：
+
+```python
+input_expr  = (tile["input_expr"].to_dense().permute(2, 0, 1) * self.scale).clamp(-10, 10)
+target_expr = (tile["target_expr"].to_dense().permute(2, 0, 1) * self.scale).clamp(-10, 10)
+```
+
+训练从 `epoch_0249.pt` 恢复（回滚至崩溃前最近的 named checkpoint）。
+
+### 5.3 训练日志（v3，epoch 0–199 摘录）
+
+```
+Epoch 0174 | diff=0.101  bound=1.048
+Epoch 0190 | diff=0.085  bound=1.040
+Epoch 0199 | diff=0.089  bound=1.035   ← Training complete（首次完整 200 epoch）
+```
+
+训练从 epoch 250 恢复后于 epoch 499 完成（checkpoint `epoch_0499.pt` 已保存）。
+
+### 5.4 v3 推断结果（CESC 测试集，20 tile）
+
+对 CESC 测试集评估了 epoch_0249 和 epoch_0499，并进行 t_start 超参扫描：
+
+#### epoch_0249 最优（t_start 扫描）
+
+| t_start | RMSE↓ | PCC↑ | vs Baseline |
+|---------|-------|------|------------|
+| 100 | 2.317 | 0.135 | RMSE -3%，PCC 持平 |
+| 150 | 2.280 | 0.134 | RMSE -4% |
+| 200 | 2.257 | 0.132 | RMSE -5% |
+| 250 | 2.237 | 0.129 | RMSE -6% |
+| 300 | 2.216 | 0.125 | RMSE -7%，PCC -7% |
+| **Baseline** | **2.394** | **0.135** | 参考 |
+
+#### epoch_0499（模型停滞，无效）
+
+epochs 0299/0399/0499 推断结果完全相同（RMSE=2.5037，PCC=0.1294），说明训练从 epoch 250 恢复后权重几乎未更新——模型陷入停滞。
 
 ---
 
-## 6. 下一步
+## 6. 当前瓶颈分析
+
+### 问题 1：多数据集训练后性能不及预期
+
+- v3 epoch_0249 的最佳 RMSE 改善仅 **3–7%**，显著低于 v2 的 19%（但 v2 用了不同 tile 集，不可直接比较）
+- **RMSE 和 PCC 存在 trade-off**：t_start 越大，RMSE 越好但 PCC 越差（模型削减了空间异质性）
+- 推断时选 **t_start=100** 可保持 PCC 基本不变（0.135 vs 0.135）同时轻微改善 RMSE
+
+### 问题 2：epoch 250+ 训练停滞
+
+- `epoch_0299 / epoch_0399 / epoch_0499` 推断输出完全相同
+- 可能原因：NaN 崩溃后恢复时 optimizer 动量状态异常，或 clamp 后 loss 过低导致梯度不足
+- `latest.pt` 指向 epoch 266（非 epoch 499），说明存在一个独立的中途取消的短训练覆写了 latest
+
+### 问题 3：boundary loss 持续高位
+
+boundary loss 全程徘徊在 ~1.04–1.07，远未收敛，说明边界检测任务对当前数据量和训练轮数来说仍难以学习。
+
+---
+
+## 7. 下一步建议
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
-| 高 | 获取更多训练数据 | PRAD / NSCLC 数据集，扩大到数百个 tile |
-| 中 | 实现 NB Decoder | `src/models/decoder.py`：SVD 64 维 → G 基因，NB-NLL loss |
-| 中 | 完善推断脚本 | `scripts/infer.py`：支持真实 Visium HD 数据输入（需要 .pkl 投影矩阵） |
-| 低 | boundary loss 调优 | 调整 `λ₂` 权重减少对 diff loss 的干扰 |
+| 高 | 诊断训练停滞原因 | 检查 epoch 250 后 loss 曲线；必要时降低 lr 重新从 epoch_0249 开始 fine-tune |
+| 高 | 实现 NB Decoder | `src/models/decoder.py`：SVD 64 维 → G 基因，NB-NLL loss |
+| 中 | 推断脚本支持真实数据 | `scripts/infer.py`：支持真实 Visium HD 数据（需要 .pkl 投影矩阵） |
+| 低 | boundary loss 调优 | 减小 `λ₂` 或 `t_thresh`，降低边界任务对 diff loss 的干扰 |
