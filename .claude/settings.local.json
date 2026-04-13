@@ -9,7 +9,10 @@
       "Bash(unzip -l SVD_NSCLC.zip)",
       "Bash(unzip -l SVD_PRAD.zip)",
       "Bash(unzip -l SVD_CESC.zip)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(git merge:*)"
     ]
   }
 }

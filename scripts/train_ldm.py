@@ -114,7 +114,7 @@ def train(args):
 
     # ── Data ─────────────────────────────────────────────────────────────────
     loader = build_dataloader(
-        data_dirs=args.data_dir,   # accepts one or multiple dirs
+        data_dir=args.data_dir,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
@@ -233,7 +233,7 @@ def train(args):
 def parse_args():
     p = argparse.ArgumentParser(description="Train HDpainter LDM")
     # Data
-    p.add_argument("--data_dir",    required=True,  nargs="+", help="One or more SVD tile directories (rescaled to std≈1 before mixing)")
+    p.add_argument("--data_dir",    required=True,  help="Preprocessed tile directory produced by build_filtered_dataset()")
     p.add_argument("--ckpt_dir",    required=True,  help="Checkpoint output directory")
     # Training
     p.add_argument("--epochs",      type=int,   default=200)
