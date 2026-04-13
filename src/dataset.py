@@ -7,12 +7,15 @@ from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
 # Per-dataset global scale factors to normalise SVD features to std ≈ 1.
 # Each dataset's SVD was computed independently with its own StandardScaler,
-# resulting in different effective scales (measured on non-zero pixels):
-#   CESC  std ≈ 1.03  → scale 1/1.03 ≈ 0.97
-#   NSCLC std ≈ 0.42  → scale 1/0.42 ≈ 2.38
-#   PRAD  std ≈ 0.34  → scale 1/0.34 ≈ 2.94
+# resulting in different effective scales (measured on non-zero pixels,
+# sampled from first 50 tiles of each dataset):
+#   CESC  std ≈ 1.0062 → scale 1/1.0062 ≈ 0.9938
+#   OV    std ≈ 1.0455 → scale 1/1.0455 ≈ 0.9565
+#   NSCLC std ≈ 0.42   → scale 1/0.42   ≈ 2.38
+#   PRAD  std ≈ 0.34   → scale 1/0.34   ≈ 2.94
 _DATASET_SCALE: dict[str, float] = {
-    "SVD_CESC":  1.0 / 1.03,
+    "SVD_CESC":  1.0 / 1.0062,  # measured 2026-04-13
+    "SVD_OV":    1.0 / 1.0455,  # measured 2026-04-13
     "SVD_NSCLC": 1.0 / 0.42,
     "SVD_PRAD":  1.0 / 0.34,
 }
