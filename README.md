@@ -1,6 +1,6 @@
 # HDpainter
 
-HDpainter is a cross-platform pipeline for Visium HD cell segmentation and cell-level signal enhancement. It uses high-confidence Xenium cell/nucleus annotations to synthesize Visium HD-like training data, trains a supervised segmentation model on the synthetic HD representation, applies the model to real Visium HD data, and then performs HERGAST-like graph neural network post-processing to improve cell-level gene signals.
+HDpainter is a cross-platform pipeline for Visium HD cell segmentation and cell-level signal enhancement. It uses high-confidence Xenium cell/nucleus annotations to synthesize Visium HD-like training data, trains a supervised segmentation model on the synthetic HD representation, applies the model to real Visium HD data, and then performs graph neural network post-processing to improve cell-level gene signals.
 
 本仓库目前只保存核心代码和运行说明，不保存原始空间转录组数据、训练结果、模型权重、参考文献 PDF、可视化大文件或服务器中间产物。
 
@@ -21,7 +21,9 @@ The training data construction follows these steps:
 
 During inference, real Visium HD data are first converted into the same bin-level feature representation. H&E-based nucleus segmentation can be generated automatically when the required nucleus labels are missing. The trained HDpainter model predicts cell masks from nuclei/seeds and local HD transcriptomic context, writes predicted cell IDs back to the bin-level AnnData, and aggregates bins into segmentation-derived pseudo-single-cell profiles.
 
-After segmentation, `post_process.py` and `signal_process.py` provide the cell-segmentation-based HERGAST-like signal-processing stage. `post_process.py` validates and prepares the cell-level AnnData. `signal_process.py` builds local spatial and expression graphs on segmented cells, trains a relational graph autoencoder, saves the cell embedding in `obsm["HERGAST"]`, and saves full-gene reconstructed expression in `layers["HERGAST_ReX"]`.
+After segmentation, `post_process.py` and `signal_process.py` provide the cell-segmentation-based graph signal-processing stage. `post_process.py` validates and prepares the cell-level AnnData. `signal_process.py` builds local spatial and expression graphs on segmented cells, trains a relational graph autoencoder, saves the cell embedding in `obsm["HERGAST"]`, and saves full-gene reconstructed expression in `layers["HERGAST_ReX"]`.
+
+补充说明：HDpainter 的数据预处理、分割模型和后处理代码均由人工完成。Codex 的使用主要包括批次数据处理、数据结果可视化、代码结构优化以及开发过程中的自动化测试；所有代码均已经过人工审查。如果您在使用该项目时使用 Codex 或类似工具，可以直接让其读取对应的 markdown 文件并按文档运行测试。
 
 ## Repository Layout
 
@@ -41,7 +43,7 @@ HDpainter/
 │   ├── infer_hd.py                  # One-command real-HD inference pipeline
 │   ├── infer_utils.py               # Inference-stage helpers
 │   ├── post_process.py              # Cell-level AnnData QC and graph-input preparation
-│   ├── signal_process.py            # HERGAST-like graph signal reconstruction
+│   ├── signal_process.py            # Graph signal reconstruction
 │   ├── post_data_check.py           # Cell-level QC distribution plots
 │   ├── compare_data.py              # Compare bin2cell/direct/GNN signal quality
 │   └── evaluate_signal_quality.py   # Held-out reconstruction and marker spatial quality
@@ -339,7 +341,7 @@ Prepare model input:
   --skip-pca
 ```
 
-Run HERGAST-like signal processing:
+Run graph signal processing:
 
 ```bash
 /root/miniconda3/envs/czf/bin/python inference/signal_process.py \
@@ -418,7 +420,7 @@ Gene QC before NMF: expressing_cells > 3
 HD degradation: foreground/background gamma-poisson from HD labels_he_expanded
 Post-process QC: min_counts=20, min_genes=15, min_bins=9
 Signal genes: all genes, signal_n_top_genes=0
-Signal model: HERGAST-like RGAT graph autoencoder
+Signal model: RGAT graph autoencoder
 Signal DIC: 4 x 4 tiles
 Signal test epochs: 50
 Regularize workers: 8
