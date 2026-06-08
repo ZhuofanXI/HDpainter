@@ -14,7 +14,7 @@ from sklearn.neighbors import NearestNeighbors
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run a HERGAST-like relational graph autoencoder on segmentation-derived "
+            "Run a GNN relational graph autoencoder on segmentation-derived "
             "pseudo-cell AnnData prepared by post_process.py."
         )
     )
@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
         default=1,
         help="Print training progress every N graph batches. Use 0 to disable batch-level progress logs.",
     )
-    parser.add_argument("--key-added", default="HERGAST")
+    parser.add_argument("--key-added", default="GNN")
     parser.add_argument("--save-reconstruction", dest="save_reconstruction", action="store_true", default=True)
     parser.add_argument("--no-save-reconstruction", dest="save_reconstruction", action="store_false")
     parser.add_argument("--run-leiden", action="store_true")
@@ -68,7 +68,7 @@ def _require_torch():
     except ImportError as exc:
         raise ImportError(
             "signal_process.py requires torch and torch_geometric. "
-            "Run it in the server conda environment that provides HERGAST dependencies."
+            "Run it in the server conda environment that provides GNN dependencies."
         ) from exc
     return torch, nn, F, Data, DataLoader, RGATConv
 
@@ -421,7 +421,7 @@ def main() -> None:
     print("[1/4] loading prepared h5ad...")
     adata = ad.read_h5ad(args.input_h5ad)
 
-    print("[2/4] training HERGAST-like signal model...")
+    print("[2/4] training GNN signal model...")
     model, embedding, reconstruction, loss_history = train_signal_model(
         adata,
         dim_reduction=str(args.dim_reduction),

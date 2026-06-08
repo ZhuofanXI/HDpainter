@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Compare pseudo-cell data quality across bin2cell, HDpainter direct segmentation, "
-            "and HERGAST-like post-processed results."
+            "and GNN post-processed results."
         )
     )
     parser.add_argument(
@@ -78,7 +78,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Dataset name to evaluate reconstruction against its own reference layer.",
     )
-    parser.add_argument("--reconstruction-layer", default="HERGAST_ReX")
+    parser.add_argument("--reconstruction-layer", default="GNN_ReX")
     parser.add_argument("--reconstruction-reference-layer", default="lognorm")
     return parser.parse_args()
 
@@ -98,8 +98,8 @@ def choose_layer(path: Path, requested: str | None) -> str | None:
     if requested is not None:
         return requested
     layers = list_layers(path)
-    if "HERGAST_ReX" in layers:
-        return "HERGAST_ReX"
+    if "GNN_ReX" in layers:
+        return "GNN_ReX"
     if "counts" in layers:
         return "counts"
     if "lognorm" in layers:

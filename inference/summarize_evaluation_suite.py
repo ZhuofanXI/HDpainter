@@ -79,7 +79,7 @@ def collect_reference_inference(project_root: Path) -> pd.DataFrame:
 
 
 def collect_ov_signal(ov_root: Path) -> dict[str, pd.DataFrame]:
-    base = ov_root / "hergast_like_signal_epoch012"
+    base = ov_root / "gnn_signal_epoch012"
     paths = {
         "ov_compare_summary": base / "compare_ov_e50" / "summary_metrics.csv",
         "ov_pairwise_gene": base / "compare_ov_e50" / "pairwise_gene_metrics.csv",
@@ -270,7 +270,7 @@ def main() -> None:
     save_figures(training_summary, curve, size_bins, ov_tables, args.output_dir)
     write_report(training_summary, size_bins, ov_tables, args.output_dir)
 
-    ov_plot_src = args.ov_root / "hergast_like_signal_epoch012" / "eval_quality_e50" / "plots"
+    ov_plot_src = args.ov_root / "gnn_signal_epoch012" / "eval_quality_e50" / "plots"
     ov_plot_dst = args.output_dir / "ov_signal_quality_plots"
     if ov_plot_src.exists() and not ov_plot_dst.exists():
         shutil.copytree(ov_plot_src, ov_plot_dst)

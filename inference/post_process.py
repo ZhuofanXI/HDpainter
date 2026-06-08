@@ -15,7 +15,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Prepare a segmentation-derived spatial pseudo-single-cell AnnData "
-            "for HERGAST-like graph post-processing."
+            "for GNN graph post-processing."
         )
     )
     parser.add_argument("--input-h5ad", type=Path, required=True)

@@ -195,7 +195,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--signal-num-batch-y", type=int, default=4)
     parser.add_argument("--signal-batch-spatial-k", type=int, default=4)
     parser.add_argument("--signal-batch-expression-k", type=int, default=3)
-    parser.add_argument("--signal-key-added", type=str, default="HERGAST")
+    parser.add_argument("--signal-key-added", type=str, default="GNN")
     parser.add_argument("--signal-no-reconstruction", action="store_true")
     parser.add_argument("--signal-run-leiden", action="store_true")
     parser.add_argument("--signal-leiden-resolution", type=float, default=0.3)

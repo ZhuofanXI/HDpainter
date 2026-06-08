@@ -1377,7 +1377,7 @@ def signal_process_cell_h5ad(args: Namespace, paths: dict[str, Path], scripts: d
         cmd.extend(["--run-leiden", "--leiden-resolution", str(args.signal_leiden_resolution)])
     if args.signal_save_model is not None:
         cmd.extend(["--save-model", str(args.signal_save_model)])
-    run_command(cmd, dry_run=args.dry_run, stage="HERGAST-like signal process", verbose=bool(args.verbose))
+    run_command(cmd, dry_run=args.dry_run, stage="GNN signal process", verbose=bool(args.verbose))
 
 
 def should_stop(args: Namespace, stage: str) -> bool:

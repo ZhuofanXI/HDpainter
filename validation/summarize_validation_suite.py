@@ -83,7 +83,7 @@ def collect_bin2cell_baseline(validation_dir: Path) -> tuple[pd.DataFrame, pd.Da
 
 
 def collect_ov_signal(ov_root: Path) -> dict[str, pd.DataFrame]:
-    base = ov_root / "hergast_like_signal_epoch012"
+    base = ov_root / "gnn_signal_epoch012"
     paths = {
         "ov_compare_summary": base / "compare_ov_e50" / "summary_metrics.csv",
         "ov_pairwise_gene": base / "compare_ov_e50" / "pairwise_gene_metrics.csv",
@@ -267,7 +267,7 @@ def main() -> None:
     save_figures(out_dir, training_summary, curves, hdp_size, b2c_summary, b2c_size, ov_tables)
     write_report(out_dir, training_summary, hdp_size, b2c_summary, b2c_size, ov_tables)
 
-    ov_plot_src = args.ov_root / "hergast_like_signal_epoch012" / "eval_quality_e50" / "plots"
+    ov_plot_src = args.ov_root / "gnn_signal_epoch012" / "eval_quality_e50" / "plots"
     ov_plot_dst = out_dir / "ov_signal_quality_plots"
     if ov_plot_src.exists():
         if ov_plot_dst.exists():

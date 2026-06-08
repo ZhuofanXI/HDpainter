@@ -21,7 +21,7 @@ The training data construction follows these steps:
 
 During inference, real Visium HD data are first converted into the same bin-level feature representation. H&E-based nucleus segmentation can be generated automatically when the required nucleus labels are missing. The trained HDpainter model predicts cell masks from nuclei/seeds and local HD transcriptomic context, writes predicted cell IDs back to the bin-level AnnData, and aggregates bins into segmentation-derived pseudo-single-cell profiles.
 
-After segmentation, `post_process.py` and `signal_process.py` provide the cell-segmentation-based graph signal-processing stage. `post_process.py` validates and prepares the cell-level AnnData. `signal_process.py` builds local spatial and expression graphs on segmented cells, trains a relational graph autoencoder, saves the cell embedding in `obsm["HERGAST"]`, and saves full-gene reconstructed expression in `layers["HERGAST_ReX"]`.
+After segmentation, `post_process.py` and `signal_process.py` provide the cell-segmentation-based graph signal-processing stage. `post_process.py` validates and prepares the cell-level AnnData. `signal_process.py` builds local spatial and expression graphs on segmented cells, trains a relational graph autoencoder, saves the cell embedding in `obsm["GNN"]`, and saves full-gene reconstructed expression in `layers["GNN_ReX"]`.
 
 补充说明：HDpainter 的数据预处理、分割模型和后处理代码均由人工完成。Codex 的使用主要包括批次数据处理、数据结果可视化、代码结构优化以及开发过程中的自动化测试；所有代码均已经过人工审查。如果您在使用该项目时使用 Codex 或类似工具，可以直接让其读取对应的 markdown 文件并按文档运行测试。
 
@@ -346,7 +346,7 @@ Run graph signal processing:
 ```bash
 /root/miniconda3/envs/czf/bin/python inference/signal_process.py \
   --input-h5ad /root/autodl-tmp/OV/hdpainter_inference/refer_OV_hd_stardist_id_pred_cell_level_post.h5ad \
-  --output-h5ad /root/autodl-tmp/OV/hergast_like_signal/refer_OV_hd_stardist_id_signal_e50.h5ad \
+  --output-h5ad /root/autodl-tmp/OV/gnn_signal/refer_OV_hd_stardist_id_signal_e50.h5ad \
   --dim-reduction HVG \
   --graph-input-dim 64 \
   --epochs 50 \
@@ -354,14 +354,14 @@ Run graph signal processing:
   --num-batch-y 4 \
   --batch-spatial-k 4 \
   --batch-expression-k 3 \
-  --key-added HERGAST
+  --key-added GNN
 ```
 
 With `--signal-n-top-genes 0`, all genes are marked for the signal model. The graph model stores:
 
 ```text
-obsm["HERGAST"]        # low-dimensional cell embedding
-layers["HERGAST_ReX"]  # reconstructed full-gene expression
+obsm["GNN"]        # low-dimensional cell embedding
+layers["GNN_ReX"]  # reconstructed full-gene expression
 ```
 
 The current preferred GNN setting for around 100k cells is 4 x 4 DIC batching with 50 epochs for initial testing.
@@ -397,7 +397,7 @@ Compare bin2cell, direct HDpainter segmentation, and GNN-enhanced cell-level sig
 /root/miniconda3/envs/czf/bin/python inference/compare_data.py \
   --dataset bin2cell=/root/autodl-tmp/OV/hdpainter_inference/refer_OV_hd_stardist_id_pred_cell_level.h5ad:counts \
   --dataset direct=/root/autodl-tmp/OV/refer_OV_hd_pred_cell_level_epoch012.h5ad:counts \
-  --dataset gnn_e50=/root/autodl-tmp/OV/hergast_like_signal_epoch012/refer_OV_hd_pred_cell_level_epoch012_signal_e50.h5ad:HERGAST_ReX \
+  --dataset gnn_e50=/root/autodl-tmp/OV/gnn_signal_epoch012/refer_OV_hd_pred_cell_level_epoch012_signal_e50.h5ad:GNN_ReX \
   --reconstruction-dataset gnn_e50 \
   --output-dir /root/autodl-tmp/HDpainter1/validation/evaluation_suite/signal_compare
 ```
