@@ -2,8 +2,6 @@
 
 HDpainter is a cross-platform pipeline for Visium HD cell segmentation and cell-level signal enhancement. It uses high-confidence Xenium cell/nucleus annotations to synthesize Visium HD-like training data, trains a supervised segmentation model on the synthetic HD representation, applies the model to real Visium HD data, and then performs graph neural network post-processing to improve cell-level gene signals.
 
-本仓库目前只保存核心代码和运行说明，不保存原始空间转录组数据、训练结果、模型权重、参考文献 PDF、可视化大文件或服务器中间产物。
-
 ## Core Idea
 
 HDpainter is built around one practical observation: Xenium provides transcript-level coordinates and 10x cell/nucleus segmentation, while Visium HD provides dense 2 um bin-level spatial transcriptomics but lacks reliable cell-level masks. HDpainter transfers the segmentation supervision from Xenium to Visium HD by creating synthetic HD-style training data from Xenium.
@@ -23,7 +21,7 @@ During inference, real Visium HD data are first converted into the same bin-leve
 
 After segmentation, `post_process.py` and `signal_process.py` provide the cell-segmentation-based graph signal-processing stage. `post_process.py` validates and prepares the cell-level AnnData. `signal_process.py` builds local spatial and expression graphs on segmented cells, trains a relational graph autoencoder, saves the cell embedding in `obsm["GNN"]`, and saves full-gene reconstructed expression in `layers["GNN_ReX"]`.
 
-补充说明：HDpainter 的数据预处理、分割模型和后处理代码均由人工完成。Codex 的使用主要包括批次数据处理、数据结果可视化、代码结构优化以及开发过程中的自动化测试；所有代码均已经过人工审查。如果您在使用该项目时使用 Codex 或类似工具，可以直接让其读取对应的 markdown 文件并按文档运行测试。
+Supplementary note: HDpainter's data preprocessing workflow, segmentation model, and post-processing code were manually designed and implemented. Codex was mainly used to assist with batch data processing, result visualization, code-structure optimization, and automated testing during development. All code has been manually reviewed. If you use Codex or a similar coding agent with this project, you can ask it to read the corresponding markdown files and run the documented tests directly.
 
 ## Repository Layout
 
